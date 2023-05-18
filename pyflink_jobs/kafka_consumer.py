@@ -66,6 +66,12 @@ def log_processing():
               'format' = 'json'
             )
             """
+            # https://nightlies.apache.org/flink/flink-docs-release-1.17/docs/connectors/table/kafka/#security
+            #    'properties.ssl.truststore.location' = '/path/to/kafka.client.truststore.jks',
+            #     'properties.ssl.truststore.password' = 'test1234',
+            #     /* Configure the path of keystore (private key) if client authentication is required */
+            #     'properties.ssl.keystore.location' = '/path/to/kafka.client.keystore.jks',
+            #     'properties.ssl.keystore.password' = 'test1234',
 
     create_iceberg_catalog_ddl = """
             CREATE CATALOG iceberg_sink with (
