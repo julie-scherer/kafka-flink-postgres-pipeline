@@ -28,13 +28,12 @@ help:
 
 ## Starts the Flink cluster, also builds the image if it has not been built yet
 up: ./Dockerfile
-	docker compose up --remove-orphans -d
+	docker compose --env-file flink-env.env up --remove-orphans  -d
 
 ## Shuts down the Flink cluster, cleans dangling images
 down: ./Dockerfile
 	docker compose -f docker-compose.yml -f docker-compose-kafka-generator.yml down
 	docker rmi ${IMAGE_NAME}
-
 ## Builds the flink base image with pyFlink and the flink-sql kafka connector installed.
 build: ./Dockerfile
 	docker build --platform linux/amd64 -t ${IMAGE_NAME} .

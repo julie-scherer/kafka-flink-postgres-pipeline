@@ -17,6 +17,8 @@ services:
       - "8081:8081"
     command: jobmanager
     container_name: eczachly-flink-jobmanager
+    env_file:
+      - flink-env.env
     environment:
       - |
         FLINK_PROPERTIES=
@@ -36,9 +38,6 @@ services:
     volumes:
       - ./pyflink_jobs/:/opt/pyflink_jobs/
       - ./job_artifacts/:/opt/flink/usrlib
-    environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
+    env_file:
+      - flink-env.env
+
