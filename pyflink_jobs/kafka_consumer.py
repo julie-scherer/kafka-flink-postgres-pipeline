@@ -50,7 +50,7 @@ def log_processing():
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
 
-    create_kafka_source_ddl = """
+    create_kafka_source_ddl = f"""
             CREATE TABLE payment_msg(
                 createTime VARCHAR,
                 orderId BIGINT,

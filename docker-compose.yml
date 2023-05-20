@@ -15,8 +15,12 @@ services:
     pull_policy: never
     ports:
       - "8081:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: jobmanager
     container_name: eczachly-flink-jobmanager
+    env_file:
+      - flink-env.env
     environment:
       - |
         FLINK_PROPERTIES=
@@ -31,14 +35,13 @@ services:
     depends_on:
       - jobmanager
     command: taskmanager
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     container_name: eczachly-flink-taskmanager
     scale: 1
     volumes:
       - ./pyflink_jobs/:/opt/pyflink_jobs/
       - ./job_artifacts/:/opt/flink/usrlib
-    environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
+    env_file:
+      - flink-env.env
+
