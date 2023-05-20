@@ -41,17 +41,12 @@ Targets:
   help                 Show help with `make help`
   up                   Starts the Flink cluster, also builds the image if it has not been built yet
   down                 Shuts down the Flink cluster, cleans dangling images
-  build                Builds the flink base image with pyFlink and the flink-sql kafka connector installed.
-  demo                 Starts the Flink cluster, builds the pyflink image if it has not been built yet, creates a demo kafka topic to ingest from
-  listen               Creates a kafka console consumer, i.e. prints the kafka messages to your console
   clean                Removes unused artifacts from this setup
 ```
-
-💡 If you are on an arm64 machine (e.g. Apple M1/M2), you will need to modify [line 40](https://github.com/EcZachly-Inc-Bootcamp/apache-flink-training/blob/f79ed9e0cb6b55d8ddfc55b234bceaad9e6189f0/Makefile#L40) in the Makefile to replace linux/amd64 -> linux/arm64
 
 #### Step 3
 
 We will use:
-- `make build` to enable deploying to kubernetes (minikube)
-- `make up` to deploy within docker compose
-- `make demo` to test with a sample app
+- `make up` to deploy locally within docker compose
+- `make down` to stop the Flink job and tear down the docker container
+- `docker exec -it <job manager id> flink run -py /job/start_job.py` this submits the job to the job manager
