@@ -26,16 +26,15 @@ RUN pip install --upgrade google-api-python-client\
 # Download connector libraries
 ARG FLINK_MAVEN_URL="https://repo.maven.apache.org/maven2/org/apache/flink"
 RUN wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-json/${FLINK_VERSION}/flink-json-${FLINK_VERSION}.jar; \
-    wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-sql-connector-kafka/${FLINK_VERSION}/flink-sql-connector-kafka-${FLINK_VERSION}.jar;
+    wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-sql-connector-kafka/${FLINK_VERSION}/flink-sql-connector-kafka-${FLINK_VERSION}.jar; \
+    wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-connector-jdbc/${FLINK_VERSION}/flink-connector-jdbc-${FLINK_VERSION}.jar;
+
+COPY jars/postgresql-42.6.0.jar /opt/flink/lib/postgresql-42.6.0.jar
 
 # Install iceberg and AWS dependencies
 ARG ICEBERG_MAVEN_URL="https://repo1.maven.org/maven2/org/apache/iceberg"
 RUN wget -P /opt/iceberg/lib/ $ICEBERG_MAVEN_URL/iceberg-flink-runtime-${ICEBERG_FLINK_RUNTIME_VERSION}/$ICEBERG_VERSION/iceberg-flink-runtime-${ICEBERG_FLINK_RUNTIME_VERSION}-${ICEBERG_VERSION}.jar;
 
-# Install AWS dependencies
-#ARG AWS_SDK_VERSION="2.20.18"
-#ARG AWS_MAVEN_URL="https://repo1.maven.org/maven2/software/amazon/awssdk"
-#RUN wget -P /opt/awssdk/lib/ ${AWS_MAVEN_URL}/bundle/${AWS_SDK_VERSION}/bundle-${AWS_SDK_VERSION}.jar;
 RUN echo "taskmanager.memory.jvm-metaspace.size: 512m" >> /opt/flink/conf/flink-conf.yaml;
 COPY keys/kafka_client.jks /var/private/ssl/kafka_client.jks
 COPY keys/kafka_truststore.jks /var/private/ssl/kafka_truststore.jks

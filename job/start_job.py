@@ -45,13 +45,27 @@ table_env.execute_sql(f"""
         'format' = 'csv',
         'path' = '{file_sink_path}',
         'csv.field-delimiter' = ','
-    )
+    );
+""")
+
+table_env.execute_sql(f"""
+
+CREATE TABLE processed_events (
+   url VARCHAR
+) WITH (
+   'connector' = 'jdbc',
+   'url' = 'jdbc:postgresql://host.docker.internal:5432/postgres',
+   'table-name' = 'processed_events',
+   'username' = 'zachwilson',
+    'password' = ''
+);
+
 """)
 
 stmt_set = table_env.create_statement_set()
 # only single INSERT query can be accepted by `add_insert_sql` method
 stmt_set \
-    .add_insert_sql("INSERT INTO sink_table SELECT url FROM events")
+    .add_insert_sql("INSERT INTO processed_events SELECT url FROM events")
 # execute all statements together
 table_result2 = stmt_set.execute()
 # get job status through TableResult
