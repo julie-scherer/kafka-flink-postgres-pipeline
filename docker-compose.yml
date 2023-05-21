@@ -11,7 +11,7 @@ services:
       platforms:
         - "linux/amd64"
         - "linux/arm64"
-    image: flink-eczachly-sreela-custom:latest
+    image: kafka-flink-postgres:latest
     pull_policy: never
     ports:
       - "8081:8081"
@@ -26,11 +26,12 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
     volumes:
-      - ./pyflink_jobs/:/opt/pyflink_jobs/
-      - ./job_artifacts/:/opt/flink/usrlib
+      - ./:/opt/flink/usrlib
+      - ./keys/:/var/private/
+      - ./job/:/opt/job/
 
   taskmanager:
-    image: flink-eczachly-sreela-custom:latest
+    image: kafka-flink-postgres:latest
     pull_policy: never
     depends_on:
       - jobmanager
@@ -40,8 +41,9 @@ services:
     container_name: eczachly-flink-taskmanager
     scale: 1
     volumes:
-      - ./pyflink_jobs/:/opt/pyflink_jobs/
-      - ./job_artifacts/:/opt/flink/usrlib
+      - ./:/opt/flink/usrlib
+      - ./keys/:/var/private/
+      - ./job/:/opt/job/
     env_file:
       - flink-env.env
 

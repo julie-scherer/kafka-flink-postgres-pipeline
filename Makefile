@@ -1,4 +1,7 @@
-IMAGE_NAME ?= flink-eczachly-sreela-custom:latest
+include flink-env.env
+
+CONTAINER_NAME ?= apache-flink-training
+IMAGE_NAME ?= kafka-flink-postgres:latest
 
 # COLORS
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -26,23 +29,20 @@ help:
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
-## Starts the Flink cluster, also builds the image if it has not been built yet
+
+## Builds the base Docker image and starts Flink cluster
 up: ./Dockerfile
-	docker compose --env-file flink-env.env up --remove-orphans  -d
+	docker compose --env-file flink-env.env up --build --remove-orphans  -d
 
-## Shuts down the Flink cluster, cleans dangling images
+## Shuts down the Flink cluster
 down: ./Dockerfile
-	docker compose -f docker-compose.yml down
-	docker rmi ${IMAGE_NAME}
+	docker compose down
 
-## Builds the flink base image with pyFlink and the flink-sql kafka connector installed.
-build: ./Dockerfile
-	docker build --platform linux/amd64 -t ${IMAGE_NAME} .
+## Submit the Flink job
+job: ./Dockerfile
+	docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
 
-## Creates a kafka console consumer, i.e. prints the kafka messages to your console
-listen: ./Dockerfile
-	docker compose exec kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic payment_msg
-## Removes unused artifacts from this setup
+## Removes Docker container and image from this set up
 clean: ./Dockerfile
-	docker rm eczachly-flink-*
 	docker rmi ${IMAGE_NAME}
+	docker rm ${CONTAINER_NAME}

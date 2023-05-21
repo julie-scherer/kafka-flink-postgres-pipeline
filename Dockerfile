@@ -2,9 +2,6 @@
 # PPAs as of 2023/05/06
 FROM apache/flink:1.16.0-scala_2.12-java11
 ARG FLINK_VERSION=1.16.0
-ARG ICEBERG_FLINK_RUNTIME_VERSION=1.16
-ARG PYTHON_VERSION=3.10
-ARG ICEBERG_VERSION=1.2.1
 ENV KAFKA_URL = $KAFKA_URL
 
 # Install pre-reqs to add new PPA
@@ -17,7 +14,7 @@ RUN set -ex; \
 
 # install python3 and pip3
 RUN apt-get update -y && \
-apt-get install -y python3 python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
+    apt-get install -y python3 python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --upgrade google-api-python-client\
     pip install apache-flink==${FLINK_VERSION}; \
@@ -31,13 +28,6 @@ RUN wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-json/${FLINK_VERSION}/flink
 
 COPY jars/postgresql-42.6.0.jar /opt/flink/lib/postgresql-42.6.0.jar
 
-# Install iceberg and AWS dependencies
-ARG ICEBERG_MAVEN_URL="https://repo1.maven.org/maven2/org/apache/iceberg"
-RUN wget -P /opt/iceberg/lib/ $ICEBERG_MAVEN_URL/iceberg-flink-runtime-${ICEBERG_FLINK_RUNTIME_VERSION}/$ICEBERG_VERSION/iceberg-flink-runtime-${ICEBERG_FLINK_RUNTIME_VERSION}-${ICEBERG_VERSION}.jar;
-
 RUN echo "taskmanager.memory.jvm-metaspace.size: 512m" >> /opt/flink/conf/flink-conf.yaml;
-COPY keys/kafka_client.jks /var/private/ssl/kafka_client.jks
-COPY keys/kafka_truststore.jks /var/private/ssl/kafka_truststore.jks
-COPY job/start_job.py /job/start_job.py
 
 WORKDIR /opt/flink
