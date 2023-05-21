@@ -27,7 +27,7 @@ services:
         jobmanager.rpc.address: jobmanager
     volumes:
       - ./:/opt/flink/usrlib
-      - ./keys/:/var/private/
+      - ./keys/:/var/private/ssl/
       - ./job/:/opt/job/
 
   taskmanager:
@@ -42,7 +42,7 @@ services:
     scale: 1
     volumes:
       - ./:/opt/flink/usrlib
-      - ./keys/:/var/private/
+      - ./keys/:/var/private/ssl/
       - ./job/:/opt/job/
     env_file:
       - flink-env.env
