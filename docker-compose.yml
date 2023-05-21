@@ -29,7 +29,6 @@ services:
       - ./:/opt/flink/usrlib
       - ./keys/:/var/private/ssl/
       - ./job/:/opt/job/
-      - ./jars/:/opt/flink/lib/
 
   taskmanager:
     image: kafka-flink-postgres:latest
@@ -41,11 +40,10 @@ services:
       - "host.docker.internal:host-gateway"
     container_name: eczachly-flink-taskmanager
     scale: 1
-    env_file:
-      - flink-env.env
     volumes:
       - ./:/opt/flink/usrlib
       - ./keys/:/var/private/ssl/
       - ./job/:/opt/job/
-      - ./jars/:/opt/flink/lib/
+    env_file:
+      - flink-env.env
 
