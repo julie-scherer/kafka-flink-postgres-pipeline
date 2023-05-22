@@ -43,7 +43,7 @@ make up
 docker compose --env-file flink-env.env up --build --remove-orphans  -d
 ```
 
-:alarm_clock: Wait until the Flink UI is running at [host.docker.internal:8081](host.docker.internal:8081). This may take a minute or so.
+**:alarm_clock: Wait until the Flink UI is running at [localhost:8081](localhost:8081). This may take a minute or so.**
 
 Once the Flink cluster is up and running, run the command below to deploy the flink job:
 
