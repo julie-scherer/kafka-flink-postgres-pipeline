@@ -1,5 +1,26 @@
 version: "3.9"
 services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15
+    container_name: "${CONTAINER_PREFIX:-eczachly-flink}-postgres"
+    restart: on-failure
+    env_file:
+      - flink-env.env
+    extra_hosts:
+      - "postgres:127.0.0.1"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./sql/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+  
+  # Flink job manager
   jobmanager:
     build:
       context: .
@@ -24,21 +45,25 @@ services:
       - ./job/:/opt/job/
     command: jobmanager 
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:127.0.0.1" #// Linux
+      - "host.docker.internal:host-gateway" #// Access services on the host machine from within the Docker container
+    depends_on:
+      - postgres  #// wait until postgres service created
     environment:
       - POSTGRES_URL=${POSTGRES_URL:-jdbc:postgresql://host.docker.internal:5432/postgres}
-      - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-
+  
+  # Flink task manager
   taskmanager:
     image: ${IMAGE_NAME:-pyflink:1.16.0}
     container_name: "${CONTAINER_PREFIX:-eczachly-flink}-taskmanager"
     pull_policy: never
     platform: "linux/amd64"
-    scale: 1
     env_file:
       - flink-env.env
     expose:
@@ -49,34 +74,15 @@ services:
       - ./keys/:/var/private/ssl/
       - ./job/:/opt/job/
     depends_on:
+      - postgres #// wait until postgres service created
       - jobmanager
-    links:
-      - jobmanager:jobmanager
     command: taskmanager
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:127.0.0.1" #// Linux
+      - "host.docker.internal:host-gateway" #// Access services on the host machine from within the Docker container
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
         parallelism.default: 2
-
-  postgres:
-    image: postgres:15
-    container_name: "${CONTAINER_PREFIX:-eczachly-flink}-postgres"
-    restart: on-failure
-    env_file:
-      - flink-env.env
-    environment:
-      - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=${POSTGRES_DB:-postgres}
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres-data:/var/lib/postgresql/data
-      - ./sql/create_role.sql:/docker-entrypoint-initdb.d/create_role.sql
-      - ./sql/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
-      - ./sql/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
-  

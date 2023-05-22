@@ -1,5 +1,7 @@
 include flink-env.env
 
+PLATFORM ?= linux/amd64
+
 # COLORS
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -27,6 +29,16 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 
+.PHONY: db-init
+## Builds and runs the PostgreSQL database service
+db-init:
+	docker-compose up -d postgres
+
+.PHONY: build
+## Builds the Flink base image with pyFlink and connectors installed
+build:
+	docker build --platform ${PLATFORM} -t ${IMAGE_NAME} .
+
 .PHONY: up
 ## Builds the base Docker image and starts Flink cluster
 up:
@@ -35,20 +47,33 @@ up:
 .PHONY: down
 ## Shuts down the Flink cluster
 down:
-	docker compose down
+	docker compose down --remove-orphans
 
 .PHONY: job
 ## Submit the Flink job
 job:
 	docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
 
+.PHONY: stop
+## Stops all services in Docker compose
+stop:
+	docker compose stop
+
+.PHONY: start
+## Starts all services in Docker compose
+start:
+	docker compose start
+
 .PHONY: clean
-## Removes Docker container and image from this set up
+## Stops and removes the Docker container as well as images with tag `<none>`. Uncomment line `docker rmi` if you want to remove the Docker image from this set up, too.
 clean:
-	docker rmi ${IMAGE_NAME}
-	docker rm ${CONTAINER_PREFIX}
+	docker compose stop
+	docker ps -a --format '{{.Names}}' | grep "^${CONTAINER_PREFIX}" | xargs -I {} docker rm {}
+	docker images | grep "<none>" | awk '{print $3}' | xargs -r docker rmi
+	# docker rmi ${IMAGE_NAME}
 
 .PHONY: psql
+## Runs psql to query containerized postgreSQL database in CLI
 psql:
-	docker exec -it postgres-container \
+	docker exec -it ${CONTAINER_PREFIX}-postgres \
     	psql -U postgres -d postgres

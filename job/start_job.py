@@ -19,7 +19,7 @@ def add_pipeline_jars(t_env):
 def register_catalog(t_env):
     catalog_name = "my_catalog"
     database_name = f'{os.environ.get("POSTGRES_DB","postgres")}'
-    username = f'{os.environ.get("POSTGRES_USERNAME","postgres")}'
+    username = f'{os.environ.get("POSTGRES_USER","postgres")}'
     password = f'{os.environ.get("POSTGRES_PASSWORD","postgres")}'
     jdbc_url = f'{os.environ.get("JDBC_BASE_URL")}'
 
@@ -79,7 +79,7 @@ def create_processed_events_sink(t_env):
             'connector' = 'jdbc',
             'url' = '{os.environ.get("POSTGRES_URL")}',
             'table-name' = '{table_name}',
-            'username' = '{os.environ.get("POSTGRES_USERNAME", "postgres")}',
+            'username' = '{os.environ.get("POSTGRES_USER", "postgres")}',
             'password' = '{os.environ.get("POSTGRES_PASSWORD", "postgres")}',
             'driver' = 'org.postgresql.Driver'
         );
@@ -113,7 +113,8 @@ def log_processing():
 
         # ref: https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/python/table/python_table_api_connectors/
         t_env.sql_query(f"SELECT url FROM {source_table}") \
-            .execute_insert(f"{sink_table}").wait()
+            .execute_insert(f"{sink_table}") \
+            .wait()
     
     except Exception as e:
         print("Writing records from Kafka to JDBC failed:", str(e))
