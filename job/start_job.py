@@ -54,14 +54,15 @@ def create_kafka_source(t_env):
             'connector' = 'kafka',
             'properties.bootstrap.servers' = '{os.environ.get('KAFKA_URL')}',
             'topic' = '{os.environ.get('KAFKA_TOPIC')}',
+            'properties.ssl.endpoint.identification.algorithm' = '',
             'properties.group.id' = '{os.environ.get('KAFKA_GROUP')}',
             'properties.security.protocol' = 'SSL',
             'properties.ssl.truststore.location' = '/var/private/ssl/kafka_truststore.jks',
             'properties.ssl.truststore.password' = '{os.environ.get("KAFKA_PASSWORD")}',
             'properties.ssl.keystore.location' = '/var/private/ssl/kafka_client.jks',
             'properties.ssl.keystore.password' = '{os.environ.get("KAFKA_PASSWORD")}',
-            'properties.auto.offset.reset' = 'earliest',
             'scan.startup.mode' = 'earliest-offset',
+            'properties.auto.offset.reset' = 'earliest',
             'format' = 'json'
         );
         """
@@ -90,8 +91,8 @@ def create_processed_events_sink(t_env):
 def log_processing():
     # Set up the execution environment
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.enable_checkpointing(10)
-    env.set_parallelism(1)
+    # env.enable_checkpointing(10)
+    # env.set_parallelism(1)
 
     # Set up the table environment
     settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
@@ -118,5 +119,26 @@ def log_processing():
         print("Writing records from Kafka to JDBC failed:", str(e))
 
 
+def zachs_job():
+    # Create a StreamExecutionEnvironment
+    env = EnvironmentSettings.in_streaming_mode()
+    table_env = TableEnvironment.create(env)
+
+    # Create Kafka table
+    source_table = create_kafka_source(table_env)
+    # Create postgreSQL table
+    sink_table = create_processed_events_sink(table_env)
+
+    stmt_set = table_env.create_statement_set()
+    # only single INSERT query can be accepted by `add_insert_sql` method
+    stmt_set \
+        .add_insert_sql("INSERT INTO processed_events SELECT url FROM events")
+    # execute all statements together
+    table_result2 = stmt_set.execute()
+    # get job status through TableResult
+    print(table_result2.get_job_client().get_job_status())
+
+
 if __name__ == '__main__':
     log_processing()
+    # zachs_job()
