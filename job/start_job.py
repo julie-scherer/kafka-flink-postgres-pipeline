@@ -1,13 +1,11 @@
 import os
 
-
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import EnvironmentSettings, TableEnvironment, StreamTableEnvironment
 from pyflink.table.catalog import JdbcCatalog
 
 
 FLINK_JARS_PATH = "/opt/flink/lib"
-
 def add_pipeline_jars(t_env):
     jars = []
     for file in os.listdir(FLINK_JARS_PATH):
@@ -18,27 +16,31 @@ def add_pipeline_jars(t_env):
     return t_env
 
 
-# def create_jdbc_catalog(t_env):
-#     name = "my_catalog"
-#     default_database = f'{os.environ.get("POSTGRES_DB","postgres")}'
-#     username = f'{os.environ.get("POSTGRES_USERNAME","postgres")}'
-#     password = f'{os.environ.get("POSTGRES_PASSWORD","postgres")}'
-#     base_url = "jdbc:postgresql://postgres:5432"
+def register_catalog(t_env):
+    catalog_name = "my_catalog"
+    database_name = f'{os.environ.get("POSTGRES_DB","postgres")}'
+    username = f'{os.environ.get("POSTGRES_USERNAME","postgres")}'
+    password = f'{os.environ.get("POSTGRES_PASSWORD","postgres")}'
+    jdbc_url = f'{os.environ.get("JDBC_BASE_URL")}'
 
-#     catalog = JdbcCatalog(name, default_database, username, password, base_url)
-#     t_env.register_catalog(name, catalog)
+    jdbc_catalog = JdbcCatalog(
+        catalog_name,
+        database_name,
+        username,
+        password,
+        jdbc_url
+    )
 
-#     # Set the JdbcCatalog as the current catalog of the session
-#     t_env.use_catalog(name)
-#     t_env.use_database(default_database)
-#     return t_env
+    t_env.register_catalog(catalog_name, jdbc_catalog)
+    t_env.use_catalog(catalog_name)
+    t_env.use_database(database_name)
+    return catalog_name, database_name
 
 
 def create_kafka_source(t_env):
     table_name = "events"
-    
     source_ddl = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
+        CREATE TABLE {table_name} (
             url VARCHAR,
             referrer VARCHAR,
             user_agent VARCHAR,
@@ -52,21 +54,17 @@ def create_kafka_source(t_env):
             'connector' = 'kafka',
             'properties.bootstrap.servers' = '{os.environ.get('KAFKA_URL')}',
             'topic' = '{os.environ.get('KAFKA_TOPIC')}',
-            'properties.ssl.endpoint.identification.algorithm' = '',
             'properties.group.id' = '{os.environ.get('KAFKA_GROUP')}',
             'properties.security.protocol' = 'SSL',
             'properties.ssl.truststore.location' = '/var/private/ssl/kafka_truststore.jks',
             'properties.ssl.truststore.password' = '{os.environ.get("KAFKA_PASSWORD")}',
             'properties.ssl.keystore.location' = '/var/private/ssl/kafka_client.jks',
             'properties.ssl.keystore.password' = '{os.environ.get("KAFKA_PASSWORD")}',
-            'scan.startup.mode' = 'earliest-offset',
             'properties.auto.offset.reset' = 'earliest',
-            'format' = 'json',
-            'json.ignore-parse-errors' = 'true',  -- Ignore parsing errors
-            'json.fail-on-missing-field' = 'false' -- Do not fail on missing fields
-        )
-    """
-    
+            'scan.startup.mode' = 'earliest-offset',
+            'format' = 'json'
+        );
+        """
     t_env.execute_sql(source_ddl)
     return table_name
 
@@ -74,14 +72,14 @@ def create_kafka_source(t_env):
 def create_processed_events_sink(t_env):
     table_name = 'processed_events'
     sink_ddl = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
+        CREATE TABLE {table_name} (
             url VARCHAR
         ) WITH (
             'connector' = 'jdbc',
             'url' = '{os.environ.get("POSTGRES_URL")}',
             'table-name' = '{table_name}',
-            'username' = '{os.environ.get("POSTGRES_USERNAME")}',
-            'password' = '{os.environ.get("POSTGRES_PASSWORD")}',
+            'username' = '{os.environ.get("POSTGRES_USERNAME", "postgres")}',
+            'password' = '{os.environ.get("POSTGRES_PASSWORD", "postgres")}',
             'driver' = 'org.postgresql.Driver'
         );
         """
@@ -90,27 +88,35 @@ def create_processed_events_sink(t_env):
 
 
 def log_processing():
-    # Create a StreamExecutionEnvironment
-    env = EnvironmentSettings.in_streaming_mode()
-    t_env = TableEnvironment.create(env)
+    # Set up the execution environment
+    env = StreamExecutionEnvironment.get_execution_environment()
+    env.enable_checkpointing(10)
+    env.set_parallelism(1)
 
+    # Set up the table environment
+    settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+    t_env = StreamTableEnvironment.create(env, environment_settings=settings)
+    
     # Add pipeline jars
     t_env = add_pipeline_jars(t_env)
-
-    # Create Kafka table
-    source_table = create_kafka_source(t_env)
-
-    # Create postgreSQL table
-    sink_table = create_processed_events_sink(t_env)
     
     try:
+        # Create Kafka table
+        source_table = create_kafka_source(t_env)
+
+        # # Register PostgreSQL catalog
+        # catalog_name, database_name = register_catalog(t_env)
+
+        # Create postgreSQL table
+        sink_table = create_processed_events_sink(t_env)
+
+        # ref: https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/python/table/python_table_api_connectors/
         t_env.sql_query(f"SELECT url FROM {source_table}") \
             .execute_insert(f"{sink_table}").wait()
-        # ref: https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/dev/python/table/python_table_api_connectors/
+    
     except Exception as e:
-        print("Writing records to JDBC failed:", str(e))    
+        print("Writing records from Kafka to JDBC failed:", str(e))
 
 
 if __name__ == '__main__':
     log_processing()
-
