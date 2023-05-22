@@ -94,15 +94,22 @@ cd apache-flink-training
 
 ## :boom: Running the pipeline
 
-1. Build and deploy the postgreSQL database
+1. Build the Docker image and deploy the services in the `docker-compose.yml` file, including the PostgreSQL database and Flink cluster. This will also create the sink table, `processed_events`, where Flink will write the Kafka messages to.
 
     ```bash
-    make db-init
-    docker-compose up -d postgres
-    ```
-    This will create the sink table, `processed_events`, where Flink will write the Kafka messages to.
+    make up
 
-2. Check the `processed_events` table was created by using the `psql` CLI to query the database
+    #// if you dont have make, you can run:
+    # docker compose --env-file flink-env.env up --build --remove-orphans  -d
+    ```
+    &rarr; **The first time you run this command it will take about 30 minutes to build the Docker image.** Future builds should only take a few second, assuming you haven't deleted the image since.
+
+    &rarr; After the Docker image finishes building, it will automatically start up the job manager and task manager services. This will take a minute or so. 
+    
+    **:hourglass: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** It's also recommended you check the container logs in Docker desktop. When you see `Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>`, you know you're good to go.
+
+
+2. Check the `processed_events` table was created by using the `psql` CLI to query the database.
 
     ```bash
     make psql # or see `Makefile` to execute the command manually in your terminal or command prompt
@@ -132,21 +139,7 @@ cd apache-flink-training
     ```
     &rarr; Use `\q` to exit the psql CLI
 
-3. Build the Docker image and deploy the Flink services in the `docker-compose.yml` file
-
-    ```bash
-    make up
-
-    #// if you dont have make, you can run:
-    # docker compose --env-file flink-env.env up --build --remove-orphans  -d
-    ```
-    &rarr; **The first time you run this command it will take about 30 minutes to build the Docker image.** Future builds should only take a few second, assuming you haven't deleted the image since.
-
-    &rarr; After the Docker image finishes building, it will automatically start up the job manager and task manager services. This will take a minute or so. 
-    
-    **:hourglass: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.**
-
-4. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
+3. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
 
     ```bash
     make job
@@ -155,7 +148,23 @@ cd apache-flink-training
     # docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
     ```
 
-    After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`) and the job running in the [Flink UI](http://localhost:8081/#/job/running). :tada:
+    After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`). Now go back to the [Flink UI](http://localhost:8081/#/job/running) to see job running! :tada:
+
+4. Trigger an event from the Kafka source by visiting [www.zachwilson.tech](https://www.zachwilson.tech/) and check that the events were added to your postgreSQL database.
+
+    ```bash
+    make psql
+
+    docker exec -it eczachly-flink-postgres psql -U postgres -d postgres
+    psql (15.3 (Debian 15.3-1.pgdg110+1))
+    Type "help" for help.
+
+    postgres=# SELECT COUNT(*) FROM processed_events;
+    count 
+    -------
+    739
+    (1 row)
+    ```
 
 5. When you're done, you can stop and/or clean up the Docker resources by running the commands below
 
