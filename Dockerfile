@@ -1,32 +1,35 @@
-# These are the latest combinations of versions available on dockerhub and the Ubuntu
-# PPAs as of 2023/05/06
-FROM apache/flink:1.16.0-scala_2.12-java11
-ARG FLINK_VERSION=1.16.0
-ENV KAFKA_URL = $KAFKA_URL
+FROM --platform=linux/amd64 flink:1.16.0-scala_2.12-java8
 
-# Install pre-reqs to add new PPA
-RUN set -ex; \
-    apt-get update && \
-    # Install the pre-req to be able to add PPAs before installing python
-    apt-get install -y software-properties-common && \
+# install python3: it has updated Python to 3.9 in Debian 11 and so install Python 3.7 from source
+# it currently only supports Python 3.6, 3.7 and 3.8 in PyFlink officially.
+
+# ref: https://nightlies.apache.org/flink/flink-docs-release-1.16/docs/deployment/resource-providers/standalone/docker/#using-flink-python-on-docker
+
+RUN apt-get update -y && \
+    apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev libffi-dev liblzma-dev && \
+    wget https://www.python.org/ftp/python/3.7.9/Python-3.7.9.tgz && \
+    tar -xvf Python-3.7.9.tgz && \
+    cd Python-3.7.9 && \
+    ./configure --without-tests --enable-shared && \
+    make -j6 && \
+    make install && \
+    ldconfig /usr/local/lib && \
+    cd .. && rm -f Python-3.7.9.tgz && rm -rf Python-3.7.9 && \
+    ln -s /usr/local/bin/python3 /usr/local/bin/python && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# install python3 and pip3
-RUN apt-get update -y && \
-    apt-get install -y python3 python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
-RUN ln -s /usr/bin/python3 /usr/bin/python
-RUN pip install --upgrade google-api-python-client\
-    pip install apache-flink==${FLINK_VERSION}; \
-    pip install kafka-python;
+# install PyFlink
+COPY requirements.txt .
+RUN /usr/local/bin/python3.7 -m pip install --upgrade pip; \
+    pip3 install --upgrade google-api-python-client; \
+    pip3 install -r requirements.txt  --no-cache-dir;
 
 # Download connector libraries
-ARG FLINK_MAVEN_URL="https://repo.maven.apache.org/maven2/org/apache/flink"
-RUN wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-json/${FLINK_VERSION}/flink-json-${FLINK_VERSION}.jar; \
-    wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-sql-connector-kafka/${FLINK_VERSION}/flink-sql-connector-kafka-${FLINK_VERSION}.jar; \
-    wget -P /opt/flink/lib/ ${FLINK_MAVEN_URL}/flink-connector-jdbc/${FLINK_VERSION}/flink-connector-jdbc-${FLINK_VERSION}.jar;
-
-COPY jars/postgresql-42.6.0.jar /opt/flink/lib/postgresql-42.6.0.jar
+RUN wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/flink/flink-json/1.16.0/flink-json-1.16.0.jar; \
+    wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/1.16.0/flink-sql-connector-kafka-1.16.0.jar; \
+    wget -P /opt/flink/lib/ https://repo.maven.apache.org/maven2/org/apache/flink/flink-connector-jdbc/1.16.0/flink-connector-jdbc-1.16.0.jar; \
+    wget -P /opt/flink/lib/ https://repo1.maven.org/maven2/org/postgresql/postgresql/42.2.24/postgresql-42.2.24.jar;
 
 RUN echo "taskmanager.memory.jvm-metaspace.size: 512m" >> /opt/flink/conf/flink-conf.yaml;
 

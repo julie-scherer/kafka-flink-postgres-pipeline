@@ -1,2 +1,2 @@
-*.env
 flink-env.env
+postgres-data

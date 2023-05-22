@@ -4,46 +4,79 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-      args:
-        # If you update the flink version here, be sure to update the docker base image as well
-        FLINK_VERSION: "1.16.0"
-        PYTHON_VERSION: "3.10"
       platforms:
         - "linux/amd64"
         - "linux/arm64"
-    image: kafka-flink-postgres:latest
+    image: ${IMAGE_NAME:-pyflink:1.16.0}
+    container_name: "${CONTAINER_PREFIX:-eczachly-flink}-jobmanager"
     pull_policy: never
-    ports:
-      - "8081:8081"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: jobmanager
-    container_name: eczachly-flink-jobmanager
+    platform: "linux/amd64"
+    hostname: "jobmanager"
     env_file:
       - flink-env.env
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./:/opt/flink/usrlib
+      - ./keys/:/var/private/ssl/
+      - ./job/:/opt/job/
+    command: jobmanager 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL:-jdbc:postgresql://host.docker.internal:5432/postgres}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+
+  taskmanager:
+    image: ${IMAGE_NAME:-pyflink:1.16.0}
+    container_name: "${CONTAINER_PREFIX:-eczachly-flink}-taskmanager"
+    pull_policy: never
+    platform: "linux/amd64"
+    scale: 1
+    env_file:
+      - flink-env.env
+    expose:
+      - "6121"
+      - "6122"
+    volumes:
+      - ./:/opt/flink/usrlib
+      - ./keys/:/var/private/ssl/
+      - ./job/:/opt/job/
+    depends_on:
+      - jobmanager
+    links:
+      - jobmanager:jobmanager
+    command: taskmanager
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-    volumes:
-      - ./:/opt/flink/usrlib
-      - ./keys/:/var/private/ssl/
-      - ./job/:/opt/job/
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 2
 
-  taskmanager:
-    image: kafka-flink-postgres:latest
-    pull_policy: never
-    depends_on:
-      - jobmanager
-    command: taskmanager
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    container_name: eczachly-flink-taskmanager
-    scale: 1
-    volumes:
-      - ./:/opt/flink/usrlib
-      - ./keys/:/var/private/ssl/
-      - ./job/:/opt/job/
+  postgres:
+    image: postgres:15
+    container_name: "${CONTAINER_PREFIX:-eczachly-flink}-postgres"
+    restart: on-failure
     env_file:
       - flink-env.env
-
+    environment:
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./sql/create_role.sql:/docker-entrypoint-initdb.d/create_role.sql
+      - ./sql/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
+      - ./sql/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+  

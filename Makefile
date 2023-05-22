@@ -1,8 +1,5 @@
 include flink-env.env
 
-CONTAINER_NAME ?= apache-flink-training
-IMAGE_NAME ?= kafka-flink-postgres:latest
-
 # COLORS
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -30,19 +27,28 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
 
+.PHONY: up
 ## Builds the base Docker image and starts Flink cluster
-up: ./Dockerfile
+up:
 	docker compose --env-file flink-env.env up --build --remove-orphans  -d
 
+.PHONY: down
 ## Shuts down the Flink cluster
-down: ./Dockerfile
+down:
 	docker compose down
 
+.PHONY: job
 ## Submit the Flink job
-job: ./Dockerfile
+job:
 	docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
 
+.PHONY: clean
 ## Removes Docker container and image from this set up
-clean: ./Dockerfile
+clean:
 	docker rmi ${IMAGE_NAME}
-	docker rm ${CONTAINER_NAME}
+	docker rm ${CONTAINER_PREFIX}
+
+.PHONY: psql
+psql:
+	docker exec -it postgres-container \
+    	psql -U postgres -d postgres
