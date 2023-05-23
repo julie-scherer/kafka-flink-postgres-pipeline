@@ -192,13 +192,21 @@ make help
 As of the time of writing this, the available commands are:
 
 ```bash
-  db-init     Builds and runs the PostgreSQL database service
-  build      Builds the Flink base image with pyFlink and connectors installed
-  up         Builds the base Docker image and starts Flink cluster
-  down       Shuts down the Flink cluster
-  job        Submit the Flink job
-  stop       Stops all services in Docker compose
-  start      Starts all services in Docker compose
-  clean      Stops and removes the Docker container as well as images with tag `<none>`
-  psql       Runs psql to query containerized postgreSQL database in CLI
+
+Usage:
+  make <target>
+
+Targets:
+  help                 Show help with `make help`
+  db-init              Builds and runs the PostgreSQL database service
+  build                Builds the Flink base image with pyFlink and connectors installed
+  up                   Builds the base Docker image and starts Flink cluster
+  down                 Shuts down the Flink cluster
+  job                  Submit the Flink job
+  stop                 Stops all services in Docker compose
+  start                Starts all services in Docker compose
+  clean                Stops and removes the Docker container as well as images with tag `<none>`
+  psql                 Runs psql to query containerized postgreSQL database in CLI
+  postgres-die-mac     Removes mounted postgres data dir on local machine (mac users) and in Docker
+  postgres-die-pc      Removes mounted postgres data dir on local machine (PC users) and in Docker
 ```

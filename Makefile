@@ -65,11 +65,12 @@ start:
 	docker compose start
 
 .PHONY: clean
-## Stops and removes the Docker container as well as images with tag `<none>`. Uncomment line `docker rmi` if you want to remove the Docker image from this set up, too.
+## Stops and removes the Docker container as well as images with tag `<none>`
 clean:
 	docker compose stop
 	docker ps -a --format '{{.Names}}' | grep "^${CONTAINER_PREFIX}" | xargs -I {} docker rm {}
 	docker images | grep "<none>" | awk '{print $3}' | xargs -r docker rmi
+	# Uncomment line `docker rmi` if you want to remove the Docker image from this set up too
 	# docker rmi ${IMAGE_NAME}
 
 .PHONY: psql
@@ -79,16 +80,11 @@ psql:
     	psql -U postgres -d postgres
 
 .PHONY: postgres-die-mac
+## Removes mounted postgres data dir on local machine (mac users) and in Docker
 postgres-die-mac:
-	@if [ -d ./postgres-data ] ; then \
-		echo "Removing postgres-data directory..."; \
-		rm -r ./postgres-data ; \
-	fi
-	docker compose down
-	docker rmi apache-flink-training-postgres:latest
+	rm -r ./postgres-data &&docker compose down && docker rmi apache-flink-training-postgres:latest
 
 .PHONY: postgres-die-pc
+## Removes mounted postgres data dir on local machine (PC users) and in Docker
 postgres-die-pc:
-	rmdir /s postgres-data
-	docker compose down
-	docker rmi apache-flink-training-postgres:latest
+	docker compose down && rmdir /s postgres-data && docker rmi apache-flink-training-postgres:latest
