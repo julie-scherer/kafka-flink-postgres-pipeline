@@ -3,47 +3,32 @@ Week 5 Apache Flink Streaming Pipelines
 
 ## :pushpin: Getting started 
 
-### :one: Installations
+### :whale: Installations
 
 To run this repo, the following components will need to be installed:
 
 1. [Docker](https://docs.docker.com/get-docker/) (required)
 2. [Docker compose](https://docs.docker.com/compose/install/#installation-scenarios) (required)
-3. Make (highly recommended)
+3. Make (recommended) -- see below
+    - On most Linux distributions and macOS, `make` is typically pre-installed by default. To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt. If it's installed, it will display the version information. 
+    - Otherwise, you can try following the instructions below, or you can just copy+paste the commands from the `Makefile` into your terminal or command prompt and run manually.
 
-**Installing make**
+        ```bash
+        # On Ubuntu or Debian:
+        sudo apt-get update
+        sudo apt-get install build-essential
 
-`make` is typically pre-installed by default on most Linux distributions and macOS. To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt. If it's installed, it will display the version information. 
+        # On CentOS or Fedora:
+        sudo dnf install make
 
-If it's not installed, you can try following the instructions below, or you can just copy+paste the commands from the `Makefile` into your terminal or command prompt and run manually.
+        # On macOS:
+        xcode-select --install
 
-- On Ubuntu or Debian:
+        # On windows:
+        choco install make # uses Chocolatey, https://chocolatey.org/install
+        ```
 
-    ```bash
-    sudo apt-get update
-    sudo apt-get install build-essential
-    ```
-
-- On CentOS or Fedora:
-
-    ```bash
-    sudo dnf install make
-    ```
-
-- On macOS:
-
-    ```bash
-    xcode-select --install
-    ```
-
-- On windows (using [Chocolatey](https://chocolatey.org/install)):
-
-    ```bash
-    choco install make
-    ```
-
-
-### :two: Local setup
+### :computer: Local setup
 
 Clone/fork the repo and navigate to the root directory on your local computer.
 
@@ -52,15 +37,15 @@ git clone https://github.com/EcZachly-Inc-Bootcamp/apache-flink-training.git
 cd apache-flink-training
 ```
 
-### Configure credentials
+### :dizzy: Configure credentials
 
-1. Copy `example.env` to `flink-env.env`:
+1. Copy `example.env` to `flink-env.env`.
 
     ```bash
     cp example.env flink-env.env
     ```
 
-2. Use `vim` or your favorite text editor to update `KAFKA_PASSWORD`, `KAFKA_GROUP`, `KAFKA_TOPIC`, and `KAFKA_URL` with the credentials in the `flink-env.env` file Zach shared in Discord
+2. Use `vim` or your favorite text editor to update `KAFKA_PASSWORD`, `KAFKA_GROUP`, `KAFKA_TOPIC`, and `KAFKA_URL` with the credentials in the `flink-env.env` file Zach shared in Discord.
 
     ```bash
     vim flink-env.env
@@ -84,16 +69,18 @@ cd apache-flink-training
     POSTGRES_DB=postgres
     ```
 
-    :exclamation: Please do **not** push or share the environment file outside the bootcamp as it contains the credentials to cloud Kafka resources that could be compromised. :exclamation:
+    **:exclamation: Please do *not* push or share the environment file outside the bootcamp as it contains the credentials to cloud Kafka resources that could be compromised. :exclamation:**
 
-    &rarr; You can safely ignore the rest of the credentials in the `flink-env.env` file in Discord since the repo has since been updated and everything else you need is conveniently included in the `example.env`.
+    Other notes ~
 
-    &rarr; You might also need to modify the configurations for the containerized postgreSQL instance such as `POSTGRES_USER` and `POSTGRES_PASSWORD`. Otherwise, you can leave the default username and password as `postgres`.
+    &rarr; _You can safely ignore the rest of the credentials in the `flink-env.env` file in Discord since the repo has since been updated and everything else you need is conveniently included in the `example.env`._
+
+    &rarr; _You might also need to modify the configurations for the containerized postgreSQL instance such as `POSTGRES_USER` and `POSTGRES_PASSWORD`. Otherwise, you can leave the default username and password as `postgres`._
 
 
 ## :boom: Running the pipeline
 
-1. Build the Docker image and deploy the services in the `docker-compose.yml` file, including the PostgreSQL database and Flink cluster. This will also create the sink table, `processed_events`, where Flink will write the Kafka messages to.
+1. Build the Docker image and deploy the services in the `docker-compose.yml` file, including the PostgreSQL database and Flink cluster. This will (should) also create the sink table, `processed_events`, where Flink will write the Kafka messages to.
 
     ```bash
     make up
@@ -102,14 +89,15 @@ cd apache-flink-training
     # docker compose --env-file flink-env.env up --build --remove-orphans  -d
     ```
 
-    **:star: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** It's also recommended you check the container logs in Docker desktop. When you see `Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>`, you know you're good to go.
-    
-    &rarr; **The first time you run this command it might take anywhere from 5 to 30 minutes to build the Docker image.** Future builds should only take a few second, assuming you haven't deleted the image since.
+    **:star: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** _Note the first time you build the Docker image it can take anywhere from 5 to 30 minutes. Future builds should only take a few second, assuming you haven't deleted the image since._
 
-    &rarr; After the Docker image finishes building, it will automatically start up the job manager and task manager services. This will take a minute or so.     
+    :information_source: After the image is built, Docker will automatically start up the job manager and task manager services. This will take a minute or so. Check the container logs in Docker desktop and when you see the line below, you know you're good to move onto the next step.
 
+    ```
+    taskmanager Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>
+    ```
 
-2. Check the `processed_events` table was created by using the `psql` CLI to query the database.
+2. Check that the `processed_events` table was created by using the `psql` command to query the database in the CLI.
 
     ```bash
     make psql 
@@ -134,7 +122,7 @@ cd apache-flink-training
     (1 row)
     ```
 
-    :bulb: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
+    :bangbang: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
     ```bash
     psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
     ```
@@ -154,15 +142,15 @@ cd apache-flink-training
     # docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
     ```
 
-    After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`). Now go back to the [Flink UI](http://localhost:8081/#/job/running) to see job running! :tada:
+    After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`). Now go back to the [Flink UI](http://localhost:8081/#/job/running) to see the job running! :tada:
 
-4. Trigger an event from the Kafka source by visiting [www.zachwilson.tech](https://www.zachwilson.tech/) and check that the events were added to your postgreSQL database.
+4. Trigger an event from the Kafka source by visiting [www.zachwilson.tech](https://www.zachwilson.tech/) and then query the `processed_events` table in your postgreSQL database to confirm the data/events were added.
 
     ```bash
     make psql
     # or see `Makefile` to execute the command manually in your terminal or command prompt
 
-    # example output:
+    # expected output:
     docker exec -it eczachly-flink-postgres psql -U postgres -d postgres
     psql (15.3 (Debian 15.3-1.pgdg110+1))
     Type "help" for help.
