@@ -13,8 +13,10 @@ END
 $do$;
 SELECT * FROM pg_roles WHERE rolname = 'postgres';
 
+-- Create postgres database
+CREATE DATABASE postgres;
 
--- Check if the table exists before creating it
+-- Create processed_events table
 CREATE TABLE processed_events (
    url VARCHAR
 );
