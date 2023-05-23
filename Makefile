@@ -82,7 +82,7 @@ psql:
 .PHONY: postgres-die-mac
 ## Removes mounted postgres data dir on local machine (mac users) and in Docker
 postgres-die-mac:
-	rm -r ./postgres-data &&docker compose down && docker rmi apache-flink-training-postgres:latest
+	rm -r ./postgres-data && docker compose down && docker rmi apache-flink-training-postgres:latest
 
 .PHONY: postgres-die-pc
 ## Removes mounted postgres data dir on local machine (PC users) and in Docker
