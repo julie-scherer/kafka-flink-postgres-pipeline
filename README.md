@@ -122,16 +122,15 @@ cd apache-flink-training
     (1 row)
     ```
 
-    :bangbang: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
-    ```bash
-    psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
-    ```
-
     Use the `\q` command to exit the psql CLI.
     ```bash
     postgres=# \q
     ```
 
+    **:bangbang: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.**
+    ```bash
+    psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
+    ```
 
 3. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
 
