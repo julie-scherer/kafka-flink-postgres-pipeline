@@ -3,7 +3,7 @@ Week 5 Apache Flink Streaming Pipelines
 
 ## :pushpin: Getting started 
 
-### Installations
+### :one: Installations
 
 To run this repo, the following components will need to be installed:
 
@@ -11,7 +11,7 @@ To run this repo, the following components will need to be installed:
 2. [Docker compose](https://docs.docker.com/compose/install/#installation-scenarios) (required)
 3. Make (highly recommended)
 
-**:bulb: Installing make**
+**Installing make**
 
 `make` is typically pre-installed by default on most Linux distributions and macOS. To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt. If it's installed, it will display the version information. 
 
@@ -43,7 +43,7 @@ If it's not installed, you can try following the instructions below, or you can 
     ```
 
 
-### Local setup
+### :two: Local setup
 
 Clone/fork the repo and navigate to the root directory on your local computer.
 
@@ -90,6 +90,7 @@ cd apache-flink-training
 
     &rarr; You might also need to modify the configurations for the containerized postgreSQL instance such as `POSTGRES_USER` and `POSTGRES_PASSWORD`. Otherwise, you can leave the default username and password as `postgres`.
 
+
 ## :boom: Running the pipeline
 
 1. Build the Docker image and deploy the services in the `docker-compose.yml` file, including the PostgreSQL database and Flink cluster. This will also create the sink table, `processed_events`, where Flink will write the Kafka messages to.
@@ -100,11 +101,12 @@ cd apache-flink-training
     #// if you dont have make, you can run:
     # docker compose --env-file flink-env.env up --build --remove-orphans  -d
     ```
-    &rarr; **The first time you run this command it will take about 30 minutes to build the Docker image.** Future builds should only take a few second, assuming you haven't deleted the image since.
 
-    &rarr; After the Docker image finishes building, it will automatically start up the job manager and task manager services. This will take a minute or so. 
+    **:star: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** It's also recommended you check the container logs in Docker desktop. When you see `Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>`, you know you're good to go.
     
-    **:hourglass: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** It's also recommended you check the container logs in Docker desktop. When you see `Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>`, you know you're good to go.
+    &rarr; **The first time you run this command it might take anywhere from 5 to 30 minutes to build the Docker image.** Future builds should only take a few second, assuming you haven't deleted the image since.
+
+    &rarr; After the Docker image finishes building, it will automatically start up the job manager and task manager services. This will take a minute or so.     
 
 
 2. Check the `processed_events` table was created by using the `psql` CLI to query the database.
@@ -132,8 +134,7 @@ cd apache-flink-training
     (1 row)
     ```
 
-    :point-right: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
-    
+    :bulb: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
     ```bash
     psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
     ```
@@ -159,7 +160,9 @@ cd apache-flink-training
 
     ```bash
     make psql
+    # or see `Makefile` to execute the command manually in your terminal or command prompt
 
+    # example output:
     docker exec -it eczachly-flink-postgres psql -U postgres -d postgres
     psql (15.3 (Debian 15.3-1.pgdg110+1))
     Type "help" for help.
@@ -179,11 +182,11 @@ cd apache-flink-training
     make clean # to remove the docker container and dangling images
     ```
 
-    :paperclip: Note the `/var/lib/postgresql/data` directory inside the PostgreSQL container is mounted to the `./postgres-data` directory on your local machine. This means the data will persist across container restarts or removals, so even if you stop/remove the container, you won't lose any data written within the container.
+    :grey_exclamation: Note the `/var/lib/postgresql/data` directory inside the PostgreSQL container is mounted to the `./postgres-data` directory on your local machine. This means the data will persist across container restarts or removals, so even if you stop/remove the container, you won't lose any data written within the container.
 
 ------
 
-:star2: To see all the make commands that're available and what they do, run:
+:information_source: To see all the make commands that're available and what they do, run:
 
 ```bash
 make help
