@@ -1,0 +1,16 @@
+FROM postgres:15
+
+ENV POSTGRES_USER=$POSTGRES_USER
+ENV POSTGRES_DB=$POSTGRES_DB
+
+# This copies the init-db.sh script from the build context to the /docker-entrypoint-initdb.d/ directory in the container image. 
+COPY sql/init.sql /docker-entrypoint-initdb.d/init.sql
+COPY sql/init-db.sh /docker-entrypoint-initdb.d/init-db.sh
+
+# This sets the execute permission on the init-db.sh script so it can be run as a command.
+RUN chmod +x /docker-entrypoint-initdb.d/init-db.sh
+
+# This sets the default command to the Postgres server process (postgres)
+CMD ["postgres"]
+
+EXPOSE 5432

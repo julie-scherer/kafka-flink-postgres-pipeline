@@ -2,9 +2,14 @@ version: "3.9"
 services:
   # PostgreSQL database
   postgres:
-    image: postgres:15
+    build:
+      context: .
+      dockerfile: ./Dockerfile.postgres
+      args:
+        - POSTGRES_USER=${POSTGRES_USER:-postgres}
+        - POSTGRES_DB=${POSTGRES_DB:-postgres}
     container_name: "${CONTAINER_PREFIX:-eczachly-flink}-postgres"
-    restart: on-failure
+    restart: always
     env_file:
       - flink-env.env
     extra_hosts:
@@ -24,7 +29,7 @@ services:
   jobmanager:
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.flink
       platforms:
         - "linux/amd64"
         - "linux/arm64"

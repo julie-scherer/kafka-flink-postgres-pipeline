@@ -77,3 +77,11 @@ clean:
 psql:
 	docker exec -it ${CONTAINER_PREFIX}-postgres \
     	psql -U postgres -d postgres
+
+.PHONY: postgres-die
+postgres-die:
+	@if [ -d ./postgres-data ] ; then \
+		echo "Removing postgres-data directory..."; \
+		rm -r ./postgres-data ; \
+	fi
+	docker rmi apache-flink-training-postgres:latest

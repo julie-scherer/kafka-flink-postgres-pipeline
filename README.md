@@ -13,11 +13,9 @@ To run this repo, the following components will need to be installed:
 
 **:bulb: Installing make**
 
-`make` is typically pre-installed by default on most Linux distributions and macOS.
+`make` is typically pre-installed by default on most Linux distributions and macOS. To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt. If it's installed, it will display the version information. 
 
-To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt.
-
-If it's installed, it will display the version information. Otherwise, you can follow the instructions below to install.
+If it's not installed, you can try following the instructions below, or you can just copy+paste the commands from the `Makefile` into your terminal or command prompt and run manually.
 
 - On Ubuntu or Debian:
 
@@ -112,11 +110,10 @@ cd apache-flink-training
 2. Check the `processed_events` table was created by using the `psql` CLI to query the database.
 
     ```bash
-    make psql # or see `Makefile` to execute the command manually in your terminal or command prompt
-    ```
+    make psql 
+    # or see `Makefile` to execute the command manually in your terminal or command prompt
 
-    The output should look something like this:
-    ```bash
+    # The output should look something like this:
     docker exec -it eczachly-flink-postgres \
             psql -U postgres -d postgres
     psql (15.3 (Debian 15.3-1.pgdg110+1))
@@ -128,16 +125,24 @@ cd apache-flink-training
     To list the tables in the current database, run the `\dt` command. You should see something like this:
     ```bash
     postgres=# \dt
-
                 List of relations
     Schema |       Name       | Type  |  Owner   
     --------+------------------+-------+----------
     public | processed_events | table | postgres
     (1 row)
+    ```
 
+    :point-right: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.
+    
+    ```bash
+    psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
+    ```
+
+    Use the `\q` command to exit the psql CLI.
+    ```bash
     postgres=# \q
     ```
-    &rarr; Use `\q` to exit the psql CLI
+
 
 3. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
 
@@ -166,7 +171,7 @@ cd apache-flink-training
     (1 row)
     ```
 
-5. When you're done, you can stop and/or clean up the Docker resources by running the commands below
+5. When you're done, you can stop and/or clean up the Docker resources by running the commands below.
 
     ```bash
     make stop # to stop running services in docker compose
@@ -197,5 +202,3 @@ As of the time of writing this, the available commands are:
   clean      Stops and removes the Docker container as well as images with tag `<none>`
   psql       Runs psql to query containerized postgreSQL database in CLI
 ```
-
-:sparkles: If you don't have Make installed, you can just copy+paste the commands from the `Makefile` into your terminal or command prompt and run manually.
