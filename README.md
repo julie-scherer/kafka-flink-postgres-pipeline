@@ -1,4 +1,4 @@
-# Flink-Kafka-Postgres Pipeline
+# Kafka-Flink-Postgres Pipeline
 
 ## :pushpin: Getting Started
 
