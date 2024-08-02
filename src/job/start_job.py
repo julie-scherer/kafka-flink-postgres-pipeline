@@ -1,5 +1,4 @@
 import os
-
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import EnvironmentSettings, TableEnvironment, StreamTableEnvironment
 from pyflink.table.catalog import JdbcCatalog
@@ -14,28 +13,6 @@ def add_pipeline_jars(t_env):
     str_jars = ';'.join(['file://'+ FLINK_JARS_PATH +'/'+ jar for jar in jars])
     t_env.get_config().get_configuration().set_string("pipeline.jars", str_jars)
     return t_env
-
-
-def register_catalog(t_env):
-    catalog_name = "my_catalog"
-    database_name = f'{os.environ.get("POSTGRES_DB","postgres")}'
-    username = f'{os.environ.get("POSTGRES_USER","postgres")}'
-    password = f'{os.environ.get("POSTGRES_PASSWORD","postgres")}'
-    jdbc_url = f'{os.environ.get("JDBC_BASE_URL")}'
-
-    jdbc_catalog = JdbcCatalog(
-        catalog_name,
-        database_name,
-        username,
-        password,
-        jdbc_url
-    )
-
-    t_env.register_catalog(catalog_name, jdbc_catalog)
-    t_env.use_catalog(catalog_name)
-    t_env.use_database(database_name)
-    return catalog_name, database_name
-
 
 def create_kafka_source(t_env):
     table_name = "events"
@@ -105,9 +82,6 @@ def log_processing():
         # Create Kafka table
         source_table = create_kafka_source(t_env)
 
-        # # Register PostgreSQL catalog
-        # catalog_name, database_name = register_catalog(t_env)
-
         # Create postgreSQL table
         sink_table = create_processed_events_sink(t_env)
 
@@ -120,26 +94,6 @@ def log_processing():
         print("Writing records from Kafka to JDBC failed:", str(e))
 
 
-def zachs_job():
-    # Create a StreamExecutionEnvironment
-    env = EnvironmentSettings.in_streaming_mode()
-    table_env = TableEnvironment.create(env)
-
-    # Create Kafka table
-    source_table = create_kafka_source(table_env)
-    # Create postgreSQL table
-    sink_table = create_processed_events_sink(table_env)
-
-    stmt_set = table_env.create_statement_set()
-    # only single INSERT query can be accepted by `add_insert_sql` method
-    stmt_set \
-        .add_insert_sql("INSERT INTO processed_events SELECT url FROM events")
-    # execute all statements together
-    table_result2 = stmt_set.execute()
-    # get job status through TableResult
-    print(table_result2.get_job_client().get_job_status())
-
-
 if __name__ == '__main__':
     log_processing()
-    # zachs_job()
+

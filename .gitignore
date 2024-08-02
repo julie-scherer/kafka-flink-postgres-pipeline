@@ -1,2 +1,3 @@
-flink-env.env
+.env
 postgres-data
+keys/*.jks

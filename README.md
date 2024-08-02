@@ -1,177 +1,158 @@
-# Apache Flink Training
-Week 5 Apache Flink Streaming Pipelines
+# Flink-Kafka-Postgres Pipeline
 
-## :pushpin: Getting started 
+## :pushpin: Getting Started
 
-### :whale: Installations
+Before starting, make sure to have Docker and Docker Compose installed:
 
-To run this repo, the following components will need to be installed:
-
-1. [Docker](https://docs.docker.com/get-docker/) (required)
-2. [Docker compose](https://docs.docker.com/compose/install/#installation-scenarios) (required)
-3. Make (recommended) -- see below
-    - On most Linux distributions and macOS, `make` is typically pre-installed by default. To check if `make` is installed on your system, you can run the `make --version` command in your terminal or command prompt. If it's installed, it will display the version information. 
-    - Otherwise, you can try following the instructions below, or you can just copy+paste the commands from the `Makefile` into your terminal or command prompt and run manually.
-
-        ```bash
-        # On Ubuntu or Debian:
-        sudo apt-get update
-        sudo apt-get install build-essential
-
-        # On CentOS or Fedora:
-        sudo dnf install make
-
-        # On macOS:
-        xcode-select --install
-
-        # On windows:
-        choco install make # uses Chocolatey, https://chocolatey.org/install
-        ```
-
-### :computer: Local setup
-
-Clone/fork the repo and navigate to the root directory on your local computer.
-
-```bash
-git clone https://github.com/EcZachly-Inc-Bootcamp/apache-flink-training.git
-cd apache-flink-training
-```
-
-### :dizzy: Configure credentials
-
-1. Copy `example.env` to `flink-env.env`.
-
-    ```bash
-    cp example.env flink-env.env
-    ```
-
-2. Use `vim` or your favorite text editor to update `KAFKA_PASSWORD`, `KAFKA_GROUP`, `KAFKA_TOPIC`, and `KAFKA_URL` with the credentials in the `flink-env.env` file Zach shared in Discord.
-
-    ```bash
-    vim flink-env.env
-    ```
-    
-    ```bash
-    KAFKA_PASSWORD="" # update this value
-    KAFKA_GROUP="" # update this value
-    KAFKA_TOPIC="" # update this value
-    KAFKA_URL="" # update this value
-
-    CONTAINER_PREFIX=eczachly-flink
-    IMAGE_NAME=pyflink/pyflink:1.16.0-scala_2.12
-    FLINK_VERSION=1.16.0
-    PYTHON_VERSION=3.7.9
-
-    POSTGRES_URL="jdbc:postgresql://host.docker.internal:5432/postgres"
-    JDBC_BASE_URL="jdbc:postgresql://host.docker.internal:5432"
-    POSTGRES_USER=postgres
-    POSTGRES_PASSWORD=postgres
-    POSTGRES_DB=postgres
-    ```
-
-    **:exclamation: Please do *not* push or share the environment file outside the bootcamp as it contains the credentials to cloud Kafka resources that could be compromised. :exclamation:**
-
-    Other notes ~
-
-    &rarr; _You can safely ignore the rest of the credentials in the `flink-env.env` file in Discord since the repo has since been updated and everything else you need is conveniently included in the `example.env`._
-
-    &rarr; _You might also need to modify the configurations for the containerized postgreSQL instance such as `POSTGRES_USER` and `POSTGRES_PASSWORD`. Otherwise, you can leave the default username and password as `postgres`._
+  1. [Docker Desktop](https://docs.docker.com/get-docker/) (required)
+  2. [Docker Compose](https://docs.docker.com/compose/install/#installation-scenarios) (required)
 
 
 ## :boom: Running the pipeline
 
-1. Build the Docker image and deploy the services in the `docker-compose.yml` file, including the PostgreSQL database and Flink cluster. This will (should) also create the sink table, `processed_events`, where Flink will write the Kafka messages to.
+**:warning: Before you get started, ensure that Docker Desktop is open and the Docker Daemon is running! :warning:**
 
-    ```bash
-    make up
+### TL;DR
 
-    #// if you dont have make, you can run:
-    # docker compose --env-file flink-env.env up --build --remove-orphans  -d
-    ```
+**Run the following commands to start the pipeline:**
 
-    **:star: Wait until the Flink UI is running at [http://localhost:8081/](http://localhost:8081/) before proceeding to the next step.** _Note the first time you build the Docker image it can take anywhere from 5 to 30 minutes. Future builds should only take a few second, assuming you haven't deleted the image since._
+  ```bash
+  make restart
+  make job
 
-    :information_source: After the image is built, Docker will automatically start up the job manager and task manager services. This will take a minute or so. Check the container logs in Docker desktop and when you see the line below, you know you're good to move onto the next step.
+  # Or, you can manually execute:
+  docker compose down --remove-orphans # same as `make down`
+  docker compose --env-file .env up --build --remove-orphans -d # same as `make up`
+  docker compose exec -d jobmanager ./bin/flink run -py /opt/src/job/start_job.py --pyFiles /opt/src # same as `make job`
+  ```
 
-    ```
-    taskmanager Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>
-    ```
+The commands above will:
 
-2. Check that the `processed_events` table was created by using the `psql` command to query the database in the CLI.
+- **`make restart`**:
+  - **`make down`**: Stop any running containers and remove them. This is to make sure you're starting from a clean environment.
+  - **`make up`**: Create and start the Docker containers defined in the docker-compose.yml file. This includes spinning up a Postgres instance inside Docker, Apache Flink, and other services.
+- **`make job`**: Deploy the Flink job defined in **`start_job.py`** to the Flink cluster.
 
-    ```bash
-    make psql 
-    # or see `Makefile` to execute the command manually in your terminal or command prompt
+**Now you should be able to see the job running in the Flink UI at [http://localhost:8081/](http://localhost:8081/).**
 
-    # The output should look something like this:
-    docker exec -it eczachly-flink-postgres \
-            psql -U postgres -d postgres
-    psql (15.3 (Debian 15.3-1.pgdg110+1))
-    Type "help" for help.
+**In a separate terminal, connect to the PostgreSQL service using the PostgreSQL CLI:**
 
-    postgres=#
-    ```
+  ```bash
+  make psql
 
-    To list the tables in the current database, run the `\dt` command. You should see something like this:
-    ```bash
-    postgres=# \dt
-                List of relations
-    Schema |       Name       | Type  |  Owner   
-    --------+------------------+-------+----------
-    public | processed_events | table | postgres
-    (1 row)
-    ```
+  # Or, manually:
+  docker exec -it pyflink-postgres psql -U postgres -d postgres -p 5632
+  ```
 
-    Use the `\q` command to exit the psql CLI.
-    ```bash
-    postgres=# \q
-    ```
+Once connected, you can execute SQL queries, such as the example below:
 
-    **:bangbang: If you don't see the `processed_events` table in the database, you can excute the command below in the Docker desktop terminal inside the postgres container.**
-    ```bash
-    psql -U postgres -d postgres -f docker-entrypoint-initdb.d/init.sql
-    ```
+  ```sql
+  SELECT COUNT(*) FROM processed_events;
+  ```
 
-3. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
+Here's a demonstration of how it works:
 
-    ```bash
-    make job
+  ```bash
+  psql (15.3 (Debian 15.3-1.pgdg110+1))
+  Type "help" for help.
 
-    #// if you dont have make, you can run:
-    # docker-compose exec jobmanager ./bin/flink run -py /opt/job/start_job.py -d
-    ```
+  postgres=# SELECT COUNT(*) FROM processed_events;
+  count
+  -------
+  100
+  (1 row)
+  ```
 
-    After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`). Now go back to the [Flink UI](http://localhost:8081/#/job/running) to see the job running! :tada:
+> 
+> *You may also attempt to connect to the PostgreSQL service using a database client such as DataGrip. However, please note that this method might not work due to system settings, network configuration or other factors. If you still wish to try, make sure PostgreSQL is installed on your local machine. Then, add a new database connection in your database client with the following details:*
+> - Host: `localhost` or 127.0.0.1
+> - Port: **`5632`** (**not** the default port 5432)
+> - Database: `postgres`
+> - User: `postgres`
+> - Password: `postgres`
+>
+> *Here's a screenshot demonstrating how to add a new connection in DataGrip:*
+> 
+> <img src="datagrip.png" alt="DataGrip Connect Data Source Screenshot" width="400">
+>
 
-4. Trigger an event from the Kafka source by visiting [www.zachwilson.tech](https://www.zachwilson.tech/) and then query the `processed_events` table in your postgreSQL database to confirm the data/events were added.
+## :broom: Clean up
 
-    ```bash
-    make psql
-    # or see `Makefile` to execute the command manually in your terminal or command prompt
+**When you're done, make sure to terminate the running terminals, stop the running containers, and clean up any unused resources:**
+    
+```bash
+make down
 
-    # expected output:
-    docker exec -it eczachly-flink-postgres psql -U postgres -d postgres
-    psql (15.3 (Debian 15.3-1.pgdg110+1))
-    Type "help" for help.
+# Or:
+docker compose down --remove-orphans
+```
 
-    postgres=# SELECT COUNT(*) FROM processed_events;
-    count 
-    -------
-    739
-    (1 row)
-    ```
+**If you want to cancel any running Flink jobs without stopping the Flink cluster, you can use the following command:**
 
-5. When you're done, you can stop and/or clean up the Docker resources by running the commands below.
+```bash
+make cancel
+```
 
-    ```bash
-    make stop # to stop running services in docker compose
-    make down # to stop and remove docker compose services
-    make clean # to remove the docker container and dangling images
-    ```
+> *This command automatically retrieves and cancels all running Flink jobs. If you don't have Make, you can simply cancel the jobs in the Flink UI.*
+>
+> *While the manual approach is more cumbersome, if you're curious or want to learn the hard way anyway, the command to cancel a Flink job is:*
+> 
+> ```bash
+> docker compose exec -d jobmanager ./bin/flink cancel <JOB_ID>
+> ```
+> 
+> *Replace **`<JOB_ID>`** with the actual JobID of the job you want to cancel. You can obtain the JobID from the Flink UI, logs, or by running the command below:*
+> 
+> ```bash
+> docker compose exec -d jobmanager ./bin/flink list -r
+> ```
+> 
+> *Instead of a quick one-line command, this now becomes a multi-step process, which is why we recommend simply canceling the jobs in the UI, or using the **`make cancel`** command if you can. But we leave it up to you to decide what your heart desires!*
 
-    :grey_exclamation: Note the `/var/lib/postgresql/data` directory inside the PostgreSQL container is mounted to the `./postgres-data` directory on your local machine. This means the data will persist across container restarts or removals, so even if you stop/remove the container, you won't lose any data written within the container.
 
-------
+## :wrench: Troubleshooting tips
+
+If you encounter any Docker or PostgreSQL issues, perform a complete cleanup and restart first to see if that fixes the problem. Follow these steps:
+
+1. Delete the mounted **`postgres-data`** folder:
+
+  ```bash
+  rm -rf postgres-data
+  ```
+
+  >
+  > :grey_exclamation: *Note that the **`/var/lib/postgresql/data`** directory inside the PostgreSQL container is mounted to the **`./postgres-data`** directory on your local machine. This ensures data persistence across container restarts or removals.*
+  >
+  > *Note that this also means if you don't delete the **`postgres-data`** folder, it will skip the initialization where it runs the DDLs in the **`data.dump`** file and instead use the data in the **`postgres-data`** folder.*
+  > 
+
+
+2. Ensure all running containers are stopped:
+
+  ```bash
+  docker compose down
+  ```
+
+3. Prune Docker to remove unnecessary resources. You will receive a prompt to confirm the cleanup. Proceed by typing **`y`** and pressing Enter.
+
+  ```bash
+  docker system prune
+
+  WARNING! This will remove:
+  - all stopped containers
+  - all networks not used by at least one container
+  - all dangling images
+  - unused build cache
+
+  Are you sure you want to continue? [y/N] y
+  ```
+
+4. Restart Docker Desktop, checking it is up to date.
+
+5. Open a new terminal and retry.
+
+6. Worst case scenario, repeat the above steps, restart your computer, and then try again.
+
 
 :information_source: To see all the make commands that're available and what they do, run:
 
@@ -179,24 +160,5 @@ cd apache-flink-training
 make help
 ```
 
-As of the time of writing this, the available commands are:
-
-```bash
-
-Usage:
-  make <target>
-
-Targets:
-  help                 Show help with `make help`
-  db-init              Builds and runs the PostgreSQL database service
-  build                Builds the Flink base image with pyFlink and connectors installed
-  up                   Builds the base Docker image and starts Flink cluster
-  down                 Shuts down the Flink cluster
-  job                  Submit the Flink job
-  stop                 Stops all services in Docker compose
-  start                Starts all services in Docker compose
-  clean                Stops and removes the Docker container as well as images with tag `<none>`
-  psql                 Runs psql to query containerized postgreSQL database in CLI
-  postgres-die-mac     Removes mounted postgres data dir on local machine (mac users) and in Docker
-  postgres-die-pc      Removes mounted postgres data dir on local machine (PC users) and in Docker
-```
+### References
+- https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/deployment/resource-providers/standalone/docker
